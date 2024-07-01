@@ -1,0 +1,8 @@
+namespace:
+  name: wordpress
+
+serviceAccount:
+  gcp_sa: wordpress-sa@coen-mykola-kryvych.iam.gserviceaccount.com
+
+deploy:
+  enabled: true
