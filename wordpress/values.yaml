@@ -1,0 +1,52 @@
+wordpress:
+  image: wordpress
+  dbhost: 127.0.0.1:3306
+
+cloudsql:
+  proxyImage: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.8.0
+  instanceConnectionName: coen-mykola-kryvych:europe-west3:wordpress-db
+
+namespace:
+  create: false
+  name: wordpress
+
+serviceAccount:
+  create: true
+  name: wordpress-sa
+  gcp_sa: wordpress-sa@coen-mykola-kryvych.iam.gserviceaccount.com
+
+service:
+    type: ClusterIP
+    port: 80
+
+certificate:
+  domain: "wordpress-test.com"
+
+externalSecrets:
+  enabled: true
+  projectId: coen-mykola-kryvych
+  clusterName: wordpress-gke
+  clusterLocation: europe-west3
+  backend:
+    secretName: sql-db-test-password
+
+general:
+  enabled: true
+  gcp_project: coen-mykola-kryvych
+  instance_name: wordpress-db
+  region: europe-west3
+  network: wordpress-vpc
+  tier: db-g1-small
+  zone: europe-west3-a
+  availabilityType: ZONAL
+  backup_enabled: true
+  backup_location: eu
+  backup_startTime: 0:00
+  backup_translogretention: 7
+  backup_retentionUnit: "COUNT"
+  backup_retainedBackups: 6
+  diskAutoresize: false
+  diskSize: 30
+  diskType: PD_HDD
+  maintenance_day: 6
+  maintenance_hour: 0

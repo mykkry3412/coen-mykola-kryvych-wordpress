@@ -1,0 +1,105 @@
+{{- if .Values.general.enabled -}}
+apiVersion: sql.cnrm.cloud.google.com/v1beta1
+kind: SQLInstance
+metadata:
+  name: {{ .Values.general.instance_name }}
+  annotations:
+    cnrm.cloud.google.com/project-id: {{ .Values.general.gcp_project }}
+  namespace: {{ .Values.namespace.name }}
+spec:
+  databaseVersion: MYSQL_8_0
+  region: {{ .Values.general.region }}
+  settings:
+    tier: {{ .Values.general.tier }}
+    ipConfiguration:
+      ipv4Enabled: false
+      privateNetworkRef:
+        name: {{ .Values.general.network }}
+    locationPreference:
+        zone: {{ .Values.general.zone }}
+    availabilityType: {{ .Values.general.availabilityType }}
+    backupConfiguration:
+      enabled: {{ .Values.general.backup_enabled }}
+      location: {{ .Values.general.backup_location }}
+      startTime: {{ .Values.general.backup_startTime }}
+      transactionLogRetentionDays: {{ .Values.general.backup_translogretention }}
+      backupRetentionSettings:
+        retentionUnit: {{ .Values.general.backup_retentionUnit }}
+        retainedBackups: {{ .Values.general.backup_retainedBackups }}
+    diskAutoresize: {{ .Values.general.diskAutoresize }}
+    diskSize: {{ .Values.general.diskSize }}
+    diskType: {{ .Values.general.diskType }}
+    maintenanceWindow:
+      day: {{ .Values.general.maintenance_day }}
+      hour: {{ .Values.general.maintenance_hour }}
+---
+apiVersion: sql.cnrm.cloud.google.com/v1beta1
+kind: SQLDatabase
+metadata:
+  name: wordpress
+  annotations:
+    cnrm.cloud.google.com/project-id: {{ .Values.general.gcp_project }}
+  namespace: {{ .Values.namespace.name }}
+spec:
+  charset: utf8mb4
+  collation: utf8mb4_bin
+  instanceRef:
+    name: {{ .Values.general.instance_name }}
+---
+apiVersion: sql.cnrm.cloud.google.com/v1beta1
+kind: SQLUser
+metadata:
+  name: wordpress-db
+  annotations:
+    cnrm.cloud.google.com/project-id: {{ .Values.general.gcp_project }}
+  namespace: {{ .Values.namespace.name }}
+spec:
+  instanceRef:
+    name: {{ .Values.general.instance_name }}
+  password:
+    valueFrom:
+      secretKeyRef:
+        name: {{ .Values.externalSecrets.backend.secretName }}
+        key: dbpassword
+---
+apiVersion: compute.cnrm.cloud.google.com/v1beta1
+kind: ComputeAddress
+metadata:
+  name: {{ .Release.Name }}-address
+  annotations:
+    cnrm.cloud.google.com/project-id: {{ .Values.general.gcp_project }}
+  namespace: {{ .Values.namespace.name }}
+spec:
+  addressType: INTERNAL
+  location: global
+  purpose: VPC_PEERING
+  prefixLength: 16
+  networkRef:
+    name: {{ .Values.general.network }}
+---
+apiVersion: compute.cnrm.cloud.google.com/v1beta1
+kind: ComputeNetwork
+metadata:
+  name: {{ .Values.general.network }}
+  annotations:
+    cnrm.cloud.google.com/project-id: {{ .Values.general.gcp_project }}
+    cnrm.cloud.google.com/deletion-policy: abandon
+  namespace: {{ .Values.namespace.name }}
+spec:
+  autoCreateSubnetworks: true
+---
+apiVersion: servicenetworking.cnrm.cloud.google.com/v1beta1
+kind: ServiceNetworkingConnection
+metadata:
+  name: {{ .Release.Name }}-psc
+  annotations:
+    cnrm.cloud.google.com/project-id: coen-mykola-kryvych
+    cnrm.cloud.google.com/deletion-policy: abandon
+  namespace: {{ .Values.namespace.name }}
+spec:
+  networkRef:
+    name: {{ .Values.general.network }}
+  reservedPeeringRanges:
+    - name: {{ .Release.Name }}-address
+  service: servicenetworking.googleapis.com
+{{- end }}

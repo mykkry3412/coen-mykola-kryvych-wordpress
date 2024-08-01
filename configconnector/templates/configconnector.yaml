@@ -1,0 +1,10 @@
+{{- if .Values.deploy.enabled -}}
+apiVersion: core.cnrm.cloud.google.com/v1beta1
+kind: ConfigConnector
+metadata:
+  name: configconnector.core.cnrm.cloud.google.com
+  namespace: {{ .Values.namespace.name }}
+spec:
+  mode: cluster
+  googleServiceAccount: {{ .Values.serviceAccount.gcp_sa }}
+{{- end }}

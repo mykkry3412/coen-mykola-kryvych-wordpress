@@ -1,0 +1,15 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Values.namespace.name }}
+  annotations:
+    networking.gke.io/managed-certificates: {{ .Release.Name }}-managed-cert
+    # kubernetes.io/ingress.class: "gce-internal"
+    # networking.gke.io/internal-load-balancer-allow-global-access: "true" # Add the annotation here
+spec:
+  defaultBackend:
+    service:
+      name: {{ .Release.Name }}
+      port:
+        number: 80

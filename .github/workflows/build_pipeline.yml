@@ -1,0 +1,61 @@
+name: Deploy wordpress helm chart on GKE
+on:
+  workflow_dispatch:
+    inputs:
+      manual_deploy:
+        description: 'Trigger manual deployment'
+        default: 'true'
+        required: false
+        
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  Deploy_wordpress_GKE:
+    runs-on: ubuntu-latest
+    steps:
+
+    - id: 'checkout_repo'
+      name: Check out the repo  
+      uses: actions/checkout@v4
+
+    - id: 'auth'
+      name: 'Authenticate to GCP'
+      uses: 'google-github-actions/auth@v2'
+      with:
+          create_credentials_file: 'true'
+          workload_identity_provider: 'projects/836623729078/locations/global/workloadIdentityPools/github-test-autm-pool/providers/github-test-autm-provider'
+          service_account: 'autm-github-test-sa@coen-mykola-kryvych.iam.gserviceaccount.com'
+  
+    - id: 'gke-credentials'
+      name: Set up GKE credentials
+      uses: google-github-actions/get-gke-credentials@v2
+      with:
+        cluster_name: wordpress-gke
+        location: europe-west3
+
+    - id: 'helm-setup'
+      name: Install Helm
+      run: |
+        curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+
+    - id: 'helm-external-secrets'
+      name: Install External-Secrets on GKE cluster
+      run: |
+        helm repo add external-secrets https://charts.external-secrets.io
+        helm repo update
+        helm upgrade --install external-secrets external-secrets/external-secrets -n wordpress --create-namespace
+        sleep 60
+
+    - id: 'helm-gcp-config-connector'
+      name: Install Config connector CRDs on GKE cluster
+      run: |
+        helm upgrade --install configconnector ./configconnector/
+        sleep 60
+
+    - id: 'helm-deploy'
+      name: 'Deploy Helm chart'
+      run: |
+        helm upgrade --install wordpress-gke ./wordpress
